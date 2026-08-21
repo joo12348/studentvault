@@ -1,0 +1,26 @@
+{
+  "name": "studentvault",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "db:generate": "cd database/schema && npx prisma generate",
+    "db:migrate": "cd database/schema && npx prisma migrate dev",
+    "db:push": "cd database/schema && npx prisma db push",
+    "db:seed": "cd database/seed && npx tsx index.ts",
+    "db:studio": "cd database/schema && npx prisma studio"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "typescript": "^5.4.0"
+  },
+  "packageManager": "npm@10.0.0"
+}

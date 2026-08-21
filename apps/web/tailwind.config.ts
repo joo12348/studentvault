@@ -1,0 +1,136 @@
+import type { Config } from "tailwindcss";
+
+const config: Config = {
+  content: [
+    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        primary: {
+          DEFAULT: "rgb(var(--color-primary))",
+          hover: "rgb(var(--color-primary-hover))",
+          light: "rgb(var(--color-primary-light))",
+        },
+        success: "rgb(var(--color-success))",
+        warning: "rgb(var(--color-warning))",
+        error: "rgb(var(--color-error))",
+        background: "rgb(var(--bg-primary))",
+        "bg-secondary": "rgb(var(--bg-secondary))",
+        "bg-tertiary": "rgb(var(--bg-tertiary))",
+        card: "rgb(var(--bg-card))",
+        "bg-hover": "rgb(var(--bg-hover))",
+        "bg-active": "rgb(var(--bg-active))",
+        foreground: "rgb(var(--text-primary))",
+        "text-secondary": "rgb(var(--text-secondary))",
+        "text-tertiary": "rgb(var(--text-tertiary))",
+        "text-inverse": "rgb(var(--text-inverse))",
+        link: "rgb(var(--text-link))",
+        border: "rgb(var(--border-primary))",
+        "border-secondary": "rgb(var(--border-secondary))",
+        "border-focus": "rgb(var(--border-focus))",
+        muted: {
+          DEFAULT: "rgb(var(--gray-100))",
+          foreground: "rgb(var(--text-tertiary))",
+        },
+      },
+      fontFamily: {
+        sans: [
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "SF Pro Display",
+          "SF Pro Text",
+          "Helvetica Neue",
+          "Helvetica",
+          "Arial",
+          "sans-serif",
+        ],
+        mono: ["SF Mono", "Fira Code", "Fira Mono", "Menlo", "Consolas", "monospace"],
+      },
+      fontSize: {
+        xs: ["0.75rem", { lineHeight: "1.5", letterSpacing: "-0.01em" }],
+        sm: ["0.875rem", { lineHeight: "1.4286", letterSpacing: "-0.01em" }],
+        base: ["1rem", { lineHeight: "1.4667", letterSpacing: "-0.011em" }],
+        lg: ["1.125rem", { lineHeight: "1.4444", letterSpacing: "-0.015em" }],
+        xl: ["1.25rem", { lineHeight: "1.4", letterSpacing: "-0.015em" }],
+        "2xl": ["1.5rem", { lineHeight: "1.3333", letterSpacing: "-0.02em" }],
+        "3xl": ["1.875rem", { lineHeight: "1.25", letterSpacing: "-0.02em" }],
+        "4xl": ["2.25rem", { lineHeight: "1.1111", letterSpacing: "-0.02em" }],
+      },
+      spacing: {
+        "0.5": "0.125rem",
+        "1": "0.25rem",
+        "1.5": "0.375rem",
+        "2": "0.5rem",
+        "2.5": "0.625rem",
+        "3": "0.75rem",
+        "3.5": "0.875rem",
+        "4": "1rem",
+        "5": "1.25rem",
+        "6": "1.5rem",
+        "7": "1.75rem",
+        "8": "2rem",
+        "9": "2.25rem",
+        "10": "2.5rem",
+        "12": "3rem",
+        "16": "4rem",
+        "20": "5rem",
+        "24": "6rem",
+      },
+      borderRadius: {
+        sm: "6px",
+        md: "10px",
+        lg: "14px",
+        xl: "18px",
+        "2xl": "22px",
+        full: "9999px",
+      },
+      boxShadow: {
+        xs: "0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 1px rgba(0, 0, 0, 0.02)",
+        sm: "0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03)",
+        DEFAULT: "0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03)",
+        md: "0 4px 6px rgba(0, 0, 0, 0.04), 0 2px 4px rgba(0, 0, 0, 0.02)",
+        lg: "0 10px 15px rgba(0, 0, 0, 0.04), 0 4px 6px rgba(0, 0, 0, 0.02)",
+        xl: "0 20px 25px rgba(0, 0, 0, 0.04), 0 10px 10px rgba(0, 0, 0, 0.02)",
+        "2xl": "0 25px 50px rgba(0, 0, 0, 0.08)",
+      },
+      transitionDuration: {
+        fast: "120ms",
+        normal: "200ms",
+        slow: "300ms",
+      },
+      transitionTimingFunction: {
+        apple: "cubic-bezier(0.4, 0, 0.2, 1)",
+      },
+      animation: {
+        "fade-in": "fade-in 200ms ease-out",
+        "slide-up": "slide-up 250ms ease-out",
+        "slide-down": "slide-down 250ms ease-out",
+        "scale-in": "scale-in 200ms ease-out",
+      },
+      keyframes: {
+        "fade-in": {
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
+        },
+        "slide-up": {
+          "0%": { opacity: "0", transform: "translateY(10px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        "slide-down": {
+          "0%": { opacity: "0", transform: "translateY(-10px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        "scale-in": {
+          "0%": { opacity: "0", transform: "scale(0.95)" },
+          "100%": { opacity: "1", transform: "scale(1)" },
+        },
+      },
+    },
+  },
+  plugins: [],
+};
+
+export default config;

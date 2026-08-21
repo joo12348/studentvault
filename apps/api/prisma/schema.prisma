@@ -1,0 +1,536 @@
+// StudentVault Database Schema
+// PostgreSQL with Prisma ORM
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum UserRole {
+  STUDENT
+  FACULTY
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+}
+
+enum ResourceStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  ARCHIVED
+}
+
+enum ResourceType {
+  NOTES
+  PPT
+  ASSIGNMENT
+  QUESTION_PAPER
+  LAB_MATERIAL
+  REFERENCE_MATERIAL
+  PROJECT_MATERIAL
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  RESOLVED
+  DISMISSED
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  APPROVE
+  REJECT
+  LOGIN
+  LOGOUT
+  DOWNLOAD
+  UPLOAD
+  VIEW
+  SHARE
+  REPORT
+}
+
+// ============================================
+// USERS & AUTHENTICATION
+// ============================================
+
+model User {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  passwordHash   String    @map("password_hash")
+  role           UserRole
+  status         UserStatus @default(PENDING_VERIFICATION)
+  emailVerified  Boolean   @default(false) @map("email_verified")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  // Relationships
+  studentProfile  StudentProfile?
+  facultyProfile  FacultyProfile?
+  resources       Resource[]       @relation("ResourceUploader")
+  bookmarks       Bookmark[]
+  collections     Collection[]
+  ratings         Rating[]
+  reports         Report[]         @relation("ReportReporter")
+  reportedReports Report[]     @relation("ReportReviewer")
+  resourceViews   ResourceView[]
+  resourceDownloads ResourceDownload[]
+  shares          Share[]
+  auditLogs       AuditLog[]
+  refreshTokens   RefreshToken[]
+  assignments     Assignment[]     @relation("AssignmentOwner")
+  uploads         Upload[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String   @map("user_id")
+  userAgent String?  @map("user_agent")
+  ip        String?
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model Upload {
+  id          String   @id @default(uuid())
+  fileName    String
+  fileSize    Int
+  mimeType    String
+  objectKey   String   @unique @map("object_key")
+  uploaderId  String   @map("uploader_id")
+  status      String   @default("PENDING")
+  checksum    String?
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  uploader User @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+
+  @@index([uploaderId])
+  @@index([status])
+  @@map("uploads")
+}
+
+// ============================================
+// PROFILES
+// ============================================
+
+model StudentProfile {
+  id          String  @id @default(cuid())
+  userId      String  @unique @map("user_id")
+  firstName   String  @map("first_name")
+  lastName    String  @map("last_name")
+  phone       String?
+  avatarUrl   String? @map("avatar_url")
+  departmentId String? @map("department_id")
+  batchId     String? @map("batch_id")
+  semester    Int?
+  enrollmentNumber String? @unique @map("enrollment_number")
+  skills      String[] // Array of skill names
+  interests   String[] // Array of interest names
+  bio         String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department Department? @relation(fields: [departmentId], references: [id])
+  batch      Batch?      @relation(fields: [batchId], references: [id])
+
+  @@map("student_profiles")
+}
+
+model FacultyProfile {
+  id          String  @id @default(cuid())
+  userId      String  @unique @map("user_id")
+  firstName   String  @map("first_name")
+  lastName    String  @map("last_name")
+  phone       String?
+  avatarUrl   String? @map("avatar_url")
+  departmentId String? @map("department_id")
+  employeeId  String? @unique @map("employee_id")
+  designation String?
+  bio         String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department Department? @relation(fields: [departmentId], references: [id])
+
+  @@map("faculty_profiles")
+}
+
+// ============================================
+// ACADEMIC STRUCTURE
+// ============================================
+
+model Department {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  code        String   @unique
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+   batches       Batch[]
+   subjects      Subject[]
+   studentProfiles StudentProfile[]
+   facultyProfiles FacultyProfile[]
+   resources     Resource[]
+
+   @@map("departments")
+}
+
+model Batch {
+  id           String   @id @default(cuid())
+  name         String   // e.g., "CSE-A 2022-2026"
+  departmentId String   @map("department_id")
+  startYear    Int      @map("start_year")
+  endYear      Int      @map("end_year")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+   department   Department    @relation(fields: [departmentId], references: [id])
+   students     StudentProfile[]
+   semesters    Semester[]
+   batchSubjects BatchSubject[]
+   resources    Resource[]
+   resourceBatches ResourceBatch[]
+
+   @@unique([departmentId, name])
+   @@map("batches")
+}
+
+model Semester {
+  id        String   @id @default(cuid())
+  batchId   String   @map("batch_id")
+  number    Int      // 1-8
+  startDate DateTime? @map("start_date")
+  endDate   DateTime? @map("end_date")
+  isActive  Boolean  @default(false) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+   batch          Batch           @relation(fields: [batchId], references: [id])
+   subjects       SemesterSubject[]
+   resources      Resource[]
+
+   @@unique([batchId, number])
+   @@map("semesters")
+}
+
+model Subject {
+  id           String   @id @default(cuid())
+  name         String
+  code         String   // e.g., "CS401"
+  departmentId String   @map("department_id")
+  description  String?
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+   department      Department        @relation(fields: [departmentId], references: [id])
+   semesterSubjects SemesterSubject[]
+   resources       Resource[]
+   batchSubjects   BatchSubject[]
+
+   @@unique([departmentId, code])
+   @@map("subjects")
+}
+
+model BatchSubject {
+  id        String @id @default(cuid())
+  batchId   String @map("batch_id")
+  subjectId String @map("subject_id")
+
+   batch   Batch   @relation(fields: [batchId], references: [id], onDelete: Cascade)
+   subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+   @@unique([batchId, subjectId])
+   @@map("batch_subjects")
+}
+
+model SemesterSubject {
+  id         String @id @default(cuid())
+  semesterId String @map("semester_id")
+  subjectId  String @map("subject_id")
+
+   semester Semester @relation(fields: [semesterId], references: [id], onDelete: Cascade)
+   subject  Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+   @@unique([semesterId, subjectId])
+   @@map("semester_subjects")
+}
+
+// ============================================
+// RESOURCES
+// ============================================
+
+model Resource {
+  id            String         @id @default(cuid())
+  title         String
+  description   String?
+  status        ResourceStatus @default(PENDING_REVIEW)
+  resourceType  ResourceType   @map("resource_type")
+  uploaderId    String         @map("uploader_id")
+  departmentId  String?        @map("department_id")
+  batchId       String?        @map("batch_id")
+  semesterId    String?        @map("semester_id")
+  subjectId     String?        @map("subject_id")
+  topic         String?
+   year          Int?           // Academic year 1-4
+  unit          Int?           // Unit number
+  fileUrl       String?        @map("file_url") // S3 storage key
+  fileName      String?        @map("file_name")
+  fileSize      Int?           @map("file_size") // bytes
+  mimeType      String?        @map("mime_type")
+  checksum      String?        // SHA-256
+  visibility    String         @default("batch") // batch | selected_batches | all
+  approvedBy    String?        @map("approved_by")
+  approvedAt    DateTime?      @map("approved_at")
+  rejectionReason String?      @map("rejection_reason")
+  viewCount     Int            @default(0) @map("view_count")
+  downloadCount Int            @default(0) @map("download_count")
+  bookmarkCount Int            @default(0) @map("bookmark_count")
+  ratingSum     Float          @default(0) @map("rating_sum")
+  ratingCount   Int            @default(0) @map("rating_count")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+   uploader        User             @relation("ResourceUploader", fields: [uploaderId], references: [id])
+  department      Department?      @relation(fields: [departmentId], references: [id])
+  batch           Batch?           @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  semester        Semester?        @relation(fields: [semesterId], references: [id])
+  subject         Subject?         @relation(fields: [subjectId], references: [id])
+
+   bookmarks       Bookmark[]
+   ratings         Rating[]
+   reports         Report[]
+   views           ResourceView[]
+   downloads       ResourceDownload[]
+   shares          Share[]
+   collectionItems CollectionItem[]
+   resourceBatches ResourceBatch[]
+
+   @@index([status])
+   @@index([uploaderId])
+   @@index([subjectId])
+   @@index([semesterId])
+   @@index([resourceType])
+   @@map("resources")
+}
+
+model ResourceBatch {
+  id         String @id @default(cuid())
+   resourceId String @map("resource_id")
+   batchId    String @map("batch_id")
+
+  resource Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  batch    Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+   @@unique([resourceId, batchId])
+   @@map("resource_batches")
+}
+
+// ============================================
+// ENGAGEMENT
+// ============================================
+
+model Bookmark {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  resourceId String   @map("resource_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+   resource Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+   @@unique([userId, resourceId])
+   @@map("bookmarks")
+}
+
+model Rating {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  resourceId String   @map("resource_id")
+  score      Int      // 1-5
+  comment    String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+   resource Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+   @@unique([userId, resourceId])
+   @@map("ratings")
+}
+
+model ResourceView {
+  id         String   @id @default(cuid())
+  userId     String?  @map("user_id")
+  resourceId String   @map("resource_id")
+  ipAddress  String?  @map("ip_address")
+  userAgent  String?  @map("user_agent")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+   user     User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+   resource Resource  @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+   @@index([resourceId, createdAt])
+   @@map("resource_views")
+}
+
+model ResourceDownload {
+  id         String   @id @default(cuid())
+  userId     String?  @map("user_id")
+  resourceId String   @map("resource_id")
+  ipAddress  String?  @map("ip_address")
+  userAgent  String?  @map("user_agent")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+   user     User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+   resource Resource  @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+   @@index([resourceId, createdAt])
+   @@map("resource_downloads")
+}
+
+model Share {
+  id         String    @id @default(cuid())
+  userId     String    @map("user_id")
+  resourceId String    @map("resource_id")
+  shareCode  String    @unique @map("share_code")
+  expiresAt  DateTime? @map("expires_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+   resource Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+   @@map("shares")
+}
+
+// ============================================
+// REPORTS
+// ============================================
+
+model Report {
+  id           String       @id @default(cuid())
+  reporterId   String       @map("reporter_id")
+  resourceId   String       @map("resource_id")
+  reason       String       // spam | incorrect | inappropriate | other
+  description  String?
+  status       ReportStatus @default(PENDING)
+  reviewedBy   String?      @map("reviewed_by")
+  reviewedAt   DateTime?    @map("reviewed_at")
+  resolution   String?
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+   reporter   User     @relation("ReportReporter", fields: [reporterId], references: [id])
+  resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+   reviewer   User?    @relation("ReportReviewer", fields: [reviewedBy], references: [id])
+
+   @@map("reports")
+}
+
+// ============================================
+// COLLECTIONS (Student Study Collections)
+// ============================================
+
+model Collection {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  name        String
+  description String?
+  isPublic    Boolean  @default(false) @map("is_public")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+   user  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+   items CollectionItem[]
+
+   @@unique([userId, name])
+   @@map("collections")
+}
+
+model CollectionItem {
+  id           String   @id @default(cuid())
+  collectionId String   @map("collection_id")
+  resourceId   String   @map("resource_id")
+  note         String?
+  sortOrder    Int      @default(0) @map("sort_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+   collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+   resource   Resource   @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+   @@unique([collectionId, resourceId])
+   @@map("collection_items")
+}
+
+// ============================================
+// ASSIGNMENTS (MVP: Basic tracking)
+// ============================================
+
+model Assignment {
+  id          String    @id @default(cuid())
+  ownerId     String    @map("owner_id")
+  title       String
+  description String?
+  subjectId   String?   @map("subject_id")
+  dueDate     DateTime? @map("due_date")
+  isCompleted Boolean   @default(false) @map("is_completed")
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+   owner User @relation("AssignmentOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+   @@index([ownerId, isCompleted])
+   @@map("assignments")
+}
+
+// ============================================
+// AUDIT LOG
+// ============================================
+
+model AuditLog {
+  id         String      @id @default(cuid())
+  userId     String?     @map("user_id")
+  action     AuditAction
+   entity     String      // e.g., "resource", "user", "report"
+   entityId   String?     @map("entity_id")
+   details    Json?       // Additional context
+   ipAddress  String?     @map("ip_address")
+   userAgent  String?     @map("user_agent")
+   createdAt  DateTime    @default(now()) @map("created_at")
+
+   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+   @@index([userId, createdAt])
+   @@index([entity, entityId])
+   @@index([action, createdAt])
+   @@map("audit_logs")
+}
