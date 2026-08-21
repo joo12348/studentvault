@@ -9,9 +9,18 @@ async function bootstrap() {
   // Global prefix
   app.setGlobalPrefix("api/v1");
 
-  // CORS
+  // CORS — support comma-separated origins
+  const allowedOrigins = (process.env.APP_URL || "http://localhost:3000")
+    .split(",")
+    .map((o) => o.trim());
   app.enableCors({
-    origin: process.env.APP_URL || "http://localhost:3000",
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(null, true);
+      }
+    },
     credentials: true,
   });
 
