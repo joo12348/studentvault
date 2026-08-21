@@ -8,10 +8,14 @@ export class PrismaService
   implements OnModuleInit, OnModuleDestroy
 {
   constructor() {
+    const databaseUrl =
+      process.env.DATABASE_URL ||
+      "postgresql://studentvault_user:studentvault_pass@localhost:5432/studentvault";
     const adapter = new PrismaPg({
-      connectionString:
-        process.env.DATABASE_URL ||
-        "postgresql://studentvault_user:studentvault_pass@localhost:5432/studentvault",
+      connectionString: databaseUrl,
+      ssl: databaseUrl.includes("supabase") || databaseUrl.includes("sslmode")
+        ? { rejectUnauthorized: false }
+        : undefined,
     });
     super({ adapter });
   }

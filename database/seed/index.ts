@@ -5,7 +5,10 @@ const connectionString =
   process.env.DATABASE_URL ||
   "postgresql://studentvault_user:studentvault_pass@localhost:5432/studentvault";
 
-const adapter = new PrismaPg({ connectionString });
+const adapter = new PrismaPg({
+  connectionString,
+  ssl: { rejectUnauthorized: false },
+});
 const prisma = new PrismaClient({ adapter });
 
 const departments = [
