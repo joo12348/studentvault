@@ -35,10 +35,12 @@ desktop.ini
 # Turbo
 .turbo/
 
-# Prisma
-prisma/migrations/
+# Prisma - keep migrations tracked (remove ignore)
+# prisma/migrations/
 
 # Next.js
 .vercel/
 
 .vercel
+# Vercel token — never commit
+vercel.json

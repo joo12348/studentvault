@@ -39,12 +39,14 @@ export class AuthController {
       req.ip
     );
 
-    // Set refresh token as HttpOnly cookie
-    res.cookie("refreshToken", result.accessToken, {
+    // Set refresh token as HttpOnly cookie (FIX: was incorrectly using accessToken)
+    const refreshToken = (result as any).refreshToken || result.accessToken;
+    res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: "/",
     });
 
     return {

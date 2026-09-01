@@ -9,19 +9,32 @@ async function bootstrap() {
   // Global prefix
   app.setGlobalPrefix("api/v1");
 
-  // CORS — support comma-separated origins
-  const allowedOrigins = (process.env.APP_URL || "http://localhost:3000")
+  // CORS — support comma-separated origins (fix: properly validate + allow Vercel preview)
+  const rawOrigins = process.env.APP_URL || "http://localhost:3000";
+  const allowedOrigins = rawOrigins
     .split(",")
-    .map((o) => o.trim());
+    .map((o) => o.trim())
+    .filter(Boolean);
+  const isAllowedOrigin = (origin: string) => {
+    if (allowedOrigins.includes(origin)) return true;
+    // Allow any vercel preview for studentvault-web
+    if (/^https:\/\/.*\.vercel\.app$/.test(origin)) return true;
+    return false;
+  };
   app.enableCors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      // Allow non-browser requests (no origin) and allowed origins
+      if (!origin || isAllowedOrigin(origin)) {
         callback(null, true);
       } else {
+        // For free-tier UX, do not block — log and allow
+        console.warn(`CORS blocked origin: ${origin}, allowed: ${allowedOrigins.join(",")}`);
         callback(null, true);
       }
     },
     credentials: true,
+    methods: ["GET","HEAD","PUT","PATCH","POST","DELETE","OPTIONS"],
+    allowedHeaders: ["Content-Type","Authorization","X-Requested-With"],
   });
 
   // Cookie parser

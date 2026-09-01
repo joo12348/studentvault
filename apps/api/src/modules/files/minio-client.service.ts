@@ -60,17 +60,33 @@ export class MinioClientService implements OnModuleInit {
     }
   }
 
+  private getApiBaseUrl(): string {
+    // Use env API_URL / APP_URL port or fallback to relative path for Vercel/Render
+    const apiUrl = this.config.get("API_URL") || this.config.get("APP_URL");
+    if (apiUrl) {
+      // If API_URL is set, derive base (strip trailing slash)
+      return apiUrl.replace(/\/$/, "");
+    }
+    // Fallback to request host via env PORT, else relative (works on same domain)
+    const port = this.config.get("PORT") || 3001;
+    return `http://localhost:${port}`;
+  }
+
   async getPresignedPutUrl(objectKey: string, expirySeconds = 3600): Promise<string> {
     if (this.useLocalFs || !this.client) {
-      // For local FS, return a local upload endpoint
-      return `http://localhost:3001/api/v1/uploads/local/${objectKey}`;
+      // For local FS, return local upload endpoint (dynamic base for prod)
+      const base = this.getApiBaseUrl();
+      // In production on Render, local FS is ephemeral but still works for demo
+      // For R2/Supabase transition, this will be replaced by presigned URL
+      return `${base}/api/v1/uploads/local/${objectKey}`;
     }
     return this.client.presignedPutObject(this.bucket, objectKey, expirySeconds);
   }
 
   async getPresignedGetUrl(objectKey: string, expirySeconds = 3600): Promise<string> {
     if (this.useLocalFs || !this.client) {
-      return `http://localhost:3001/api/v1/uploads/local/${objectKey}`;
+      const base = this.getApiBaseUrl();
+      return `${base}/api/v1/uploads/local/${objectKey}`;
     }
     return this.client.presignedGetObject(this.bucket, objectKey, expirySeconds);
   }

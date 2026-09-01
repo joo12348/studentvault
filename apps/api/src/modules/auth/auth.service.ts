@@ -104,17 +104,19 @@ export class AuthService {
       throw new UnauthorizedException("Invalid credentials");
     }
 
-    // Generate tokens
+    // Generate tokens — distinct secrets + expiry
     const payload = {
       sub: user.id,
       email: user.email,
       role: user.role,
     };
-
-    const accessToken = this.jwtService.sign(payload);
-
+    const accessToken = this.jwtService.sign(payload, {
+      secret: this.configService.get<string>("JWT_SECRET"),
+      expiresIn: this.configService.get<string>("JWT_EXPIRES_IN", "15m") as any,
+    });
     const refreshToken = this.jwtService.sign(payload, {
-      expiresIn: "7d",
+      secret: this.configService.get<string>("REFRESH_TOKEN_SECRET") || this.configService.get<string>("JWT_SECRET"),
+      expiresIn: this.configService.get<string>("REFRESH_TOKEN_EXPIRES_IN", "7d") as any,
     });
 
     // Store refresh token
@@ -148,12 +150,15 @@ export class AuthService {
         status: user.status,
       },
       accessToken,
+      refreshToken,
     };
   }
 
   async refreshToken(token: string) {
     try {
-      const payload = this.jwtService.verify(token);
+      const payload = this.jwtService.verify(token, {
+        secret: this.configService.get<string>("REFRESH_TOKEN_SECRET") || this.configService.get<string>("JWT_SECRET"),
+      });
 
       // Check if refresh token exists and is not revoked
       const refreshToken = await this.prisma.refreshToken.findUnique({
@@ -164,11 +169,14 @@ export class AuthService {
         throw new UnauthorizedException("Invalid refresh token");
       }
 
-      // Generate new access token
+      // Generate new access token with access secret
       const newAccessToken = this.jwtService.sign({
         sub: payload.sub,
         email: payload.email,
         role: payload.role,
+      }, {
+        secret: this.configService.get<string>("JWT_SECRET"),
+        expiresIn: this.configService.get<string>("JWT_EXPIRES_IN", "15m") as any,
       });
 
       return { accessToken: newAccessToken };

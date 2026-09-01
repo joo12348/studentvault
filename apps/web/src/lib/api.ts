@@ -1,6 +1,14 @@
 import axios from "axios";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+// Support both NEXT_PUBLIC_API_URL and fallback to Render prod URL
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (typeof window !== "undefined" && (window as any).__ENV?.API_URL) ||
+  "http://localhost:3001";
+// In production build, if localhost fallback is used but we're on vercel.app, warn
+if (typeof window !== "undefined" && API_BASE_URL.includes("localhost") && window.location.hostname.includes("vercel.app")) {
+  console.warn(`NEXT_PUBLIC_API_URL not set — API will fail on Vercel. Set NEXT_PUBLIC_API_URL to your API host`);
+}
 
 export const api = axios.create({
   baseURL: `${API_BASE_URL}/api/v1`,

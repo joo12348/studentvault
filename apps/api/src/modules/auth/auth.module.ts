@@ -12,8 +12,9 @@ import { JwtStrategy } from "./jwt.strategy";
     JwtModule.registerAsync({
       useFactory: (configService: ConfigService) => {
         const secret = configService.get<string>("JWT_SECRET");
-        console.log('JWT_SECRET from ConfigService:', secret);
-        console.log('JWT_SECRET length:', secret?.length);
+        if (!secret || secret.length < 32) {
+          console.warn('JWT_SECRET is weak or missing — use 32+ chars in production');
+        }
         return {
           secret,
           signOptions: {
