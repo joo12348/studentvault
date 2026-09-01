@@ -1,3 +1,5 @@
+import * as dns from "dns";
+try { dns.setDefaultResultOrder("ipv4first"); } catch {}
 import { Injectable, OnModuleInit, OnModuleDestroy } from "@nestjs/common";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";

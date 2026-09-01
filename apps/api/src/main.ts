@@ -1,3 +1,6 @@
+import * as dns from "dns";
+// Force IPv4 on Render free tier (IPv6 ENETUNREACH 2406:da12:...:5432)
+try { dns.setDefaultResultOrder("ipv4first"); } catch {}
 import { NestFactory } from "@nestjs/core";
 import { ValidationPipe } from "@nestjs/common";
 import cookieParser from "cookie-parser";
