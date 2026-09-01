@@ -5,7 +5,7 @@ services:
     plan: free
     rootDir: apps/api
     buildCommand: npm install --include=dev && npx prisma generate --schema=prisma/schema.prisma && npm run build
-    startCommand: npx prisma migrate deploy --schema=prisma/schema.prisma && node dist/main
+    startCommand: npx prisma migrate deploy --schema=prisma/schema.prisma || echo "migrate failed — DB may be paused, starting API anyway" && node dist/main
     healthCheckPath: /api/v1/health
     autoDeploy: true
     envVars:

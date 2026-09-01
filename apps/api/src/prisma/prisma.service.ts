@@ -21,7 +21,13 @@ export class PrismaService
   }
 
   async onModuleInit() {
-    await this.$connect();
+    try {
+      await this.$connect();
+      console.log("✅ Database connected");
+    } catch (err) {
+      console.error("❌ Database connection failed on init — API will stay up for health check:", (err as Error).message);
+      // Don't crash — health endpoint will report db:down, and requests will fail gracefully
+    }
   }
 
   async onModuleDestroy() {
