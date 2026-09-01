@@ -3,10 +3,9 @@ services:
     name: studentvault-api
     runtime: node
     plan: free
-    # Root is monorepo — build from root so workspaces + turbo resolve
-    rootDir: .
-    buildCommand: npm install --include=dev && npx prisma generate --schema=apps/api/prisma/schema.prisma && npm run build --workspace=@studentvault/api
-    startCommand: npx prisma migrate deploy --schema=apps/api/prisma/schema.prisma && node apps/api/dist/main
+    rootDir: apps/api
+    buildCommand: npm install --include=dev && npx prisma generate --schema=prisma/schema.prisma && npm run build
+    startCommand: npx prisma migrate deploy --schema=prisma/schema.prisma && node dist/main
     healthCheckPath: /api/v1/health
     autoDeploy: true
     envVars:
