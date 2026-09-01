@@ -1,5 +1,15 @@
 import * as dns from "dns";
+// Force IPv4 — Render free has no IPv6 egress (ENETUNREACH 2406:da12:...:5432)
 try { dns.setDefaultResultOrder("ipv4first"); } catch {}
+// Monkey-patch dns.lookup to always use family 4 (pg/PrismaPg ignores defaultResultOrder in some Node versions)
+const _origLookup = dns.lookup;
+(dns as any).lookup = (hostname: string, opts: any, cb: any) => {
+  if (typeof opts === "function") { cb = opts; opts = {}; }
+  if (typeof opts === "number") opts = { family: opts };
+  // Force IPv4 unless explicitly requested otherwise
+  const family = opts?.family ? opts.family : 4;
+  return _origLookup(hostname, { ...opts, family }, cb);
+};
 import { Injectable, OnModuleInit, OnModuleDestroy } from "@nestjs/common";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";

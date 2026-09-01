@@ -1,6 +1,13 @@
 import * as dns from "dns";
 // Force IPv4 on Render free tier (IPv6 ENETUNREACH 2406:da12:...:5432)
 try { dns.setDefaultResultOrder("ipv4first"); } catch {}
+const _origLookupMain = dns.lookup;
+(dns as any).lookup = (hostname: string, opts: any, cb: any) => {
+  if (typeof opts === "function") { cb = opts; opts = {}; }
+  if (typeof opts === "number") opts = { family: opts };
+  const family = opts?.family ? opts.family : 4;
+  return _origLookupMain(hostname, { ...opts, family }, cb);
+};
 import { NestFactory } from "@nestjs/core";
 import { ValidationPipe } from "@nestjs/common";
 import cookieParser from "cookie-parser";
